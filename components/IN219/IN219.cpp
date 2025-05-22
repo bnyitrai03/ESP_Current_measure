@@ -126,7 +126,7 @@ esp_err_t IN219::configure() {
     ESP_LOGE(TAG, "Failed to configure IN219: %s", esp_err_to_name(err));
     return err;
   }
-  config &= BUS_VOLTAGE_RANGE & PGA;
+  config = (config | ADC_CONFIG) & BUS_VOLTAGE_RANGE & PGA;
   err = write_register(REG_CONFIG, config);
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "Failed to write configuration register: %s",

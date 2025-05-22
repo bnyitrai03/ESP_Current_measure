@@ -25,7 +25,14 @@ extern "C" void app_main(void) {
     return;
   }
   HTTPClient http_client(SERVER_URL);
-  QueueHandle_t queue = xQueueCreate(100, sizeof(Data));
+
+  const int QUEUE_LENGTH = 20000;
+  StaticQueue_t *queue_struct = (StaticQueue_t *)heap_caps_malloc(
+      sizeof(StaticQueue_t), MALLOC_CAP_SPIRAM);
+  uint8_t *queue_storage = (uint8_t *)heap_caps_malloc(
+      QUEUE_LENGTH * sizeof(Data), MALLOC_CAP_SPIRAM);
+  QueueHandle_t queue = xQueueCreateStatic(QUEUE_LENGTH, sizeof(Data),
+                                           queue_storage, queue_struct);
   if (queue == NULL) {
     ESP_LOGE(TAG, "Failed to create queue");
     return;
@@ -42,7 +49,7 @@ extern "C" void app_main(void) {
   }
   TaskParams post_params = {
       .queue = queue, .sensor = nullptr, .client = &http_client};
-  res = xTaskCreate(&post_task, "post_task", 8096, &post_params, 5, NULL);
+  res = xTaskCreate(&post_task, "post_task", 8096, &post_params, 8, NULL);
   if (res != pdPASS) {
     ESP_LOGE(TAG, "Failed to create HTTP post task");
     return;
@@ -79,7 +86,7 @@ void read_task(void *pvParameter) {
     }
     ESP_LOGI(TAG, "Current: %.2f mA, Timestamp: %s", data.current,
              data.timestamp);
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
 
